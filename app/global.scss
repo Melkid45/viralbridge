@@ -1,0 +1,18 @@
+@use './assets/_styles/base/reset';
+@use './assets/_styles/base/typography';
+
+:root {
+    --color-background: #f8f7f3;
+    --color-accent: #165FFC;
+    --color-black: #000;
+    --color-deep: #0D1017;
+    --color-white: #fff;
+    --color-grey: #ddd;
+    --color-white-70: #ffffffb3;
+}
+
+body {
+    background: var(--color-background);
+    width: 100%;
+    font-family: var(--font-inter), Arial, sans-serif;
+}

@@ -1,0 +1,14 @@
+.block{
+    width: 100%;
+    &--top{
+        padding-top: 128px;
+    }
+    &--bottom{
+        padding-bottom: 128px;
+    }
+    &--hero {
+        padding: 96px 0 0;
+        min-height: 100svh;
+        display: flex;
+    }
+}

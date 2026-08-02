@@ -1,0 +1,105 @@
+.button{
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-background);
+    border: 1px solid var(--color-accent);
+    border-radius: 16px;
+    padding: 12px 16px;
+    line-height: 1;
+    white-space: nowrap;
+    isolation: isolate;
+    svg{
+        height: 14px;
+        width: auto;
+    }
+    &--accent {
+        background: var(--color-accent);
+        color: var(--color-white);
+    }
+    &--rounded-full{
+        border-radius: 500px;
+    }
+
+    &__label{
+        display: grid;
+        overflow: hidden;
+        overflow: clip;
+
+        span {
+            grid-area: 1 / 1;
+            transition:
+                transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+                filter 360ms cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 320ms ease;
+            will-change: transform, filter, opacity;
+
+            &:first-child {
+                transform: translateY(0);
+                filter: blur(0);
+                opacity: 1;
+            }
+
+            &:last-child {
+                transform: translateY(110%);
+                filter: blur(5px);
+                opacity: 0;
+            }
+        }
+    }
+
+    &__circle{
+        position: relative;
+        width: 4px;
+        aspect-ratio: 1/1;
+        border-radius: 50%;
+        background: var(--color-white);
+        transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: inherit;
+            opacity: 0.55;
+            transform: scale(1);
+            transition:
+                transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 380ms ease;
+        }
+    }
+
+    &:is(:hover, :focus-visible) {
+        .button__label span:first-child {
+            transform: translateY(-110%);
+            filter: blur(5px);
+            opacity: 0;
+        }
+
+        .button__label span:last-child {
+            transform: translateY(0);
+            filter: blur(0);
+            opacity: 1;
+        }
+
+        .button__circle {
+            transform: scale(0.9);
+
+            &::after {
+                transform: scale(4.5);
+                opacity: 0;
+            }
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__label span,
+        &__circle,
+        &__circle::after {
+            transition: none;
+        }
+    }
+}
