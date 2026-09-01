@@ -3,6 +3,14 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
+import type { Application } from "@/app/generated/prisma/client";
+import {
+  approveApplication,
+  rejectApplication,
+  resendActivationEmail,
+  resendRejectionEmail,
+  WorkflowError,
+} from "@/lib/application-workflow";
 
 const CONNECTION_TTL_MS = 10 * 60 * 1_000;
 const MAX_PROCESSED_UPDATES = 1_000;
@@ -96,6 +104,31 @@ function requireTelegramEnv(name: "TELEGRAM_BOT_TOKEN" | "TELEGRAM_BOT_USERNAME"
     throw new Error(`Missing required environment variable: ${name}`);
   }
   return value;
+}
+
+function getTelegramAdminConfig() {
+  const chatIdValue = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
+  const userIdsValue = process.env.TELEGRAM_ADMIN_USER_IDS?.trim();
+  if (!chatIdValue) {
+    throw new Error("Missing required environment variable: TELEGRAM_ADMIN_CHAT_ID");
+  }
+  if (!userIdsValue) {
+    throw new Error("Missing required environment variable: TELEGRAM_ADMIN_USER_IDS");
+  }
+
+  const chatId = Number(chatIdValue);
+  const userIds = new Set(
+    userIdsValue
+      .split(",")
+      .map((value) => Number(value.trim()))
+      .filter(Number.isSafeInteger),
+  );
+
+  if (!Number.isSafeInteger(chatId) || userIds.size === 0) {
+    throw new Error("Telegram admin IDs have an invalid format");
+  }
+
+  return { chatId, userIds };
 }
 
 export function getTelegramConfig() {
@@ -270,6 +303,127 @@ async function callTelegramApi<T>(
   }
 
   return result.result;
+}
+
+function formatApplicationMessage(
+  application: Pick<
+    Application,
+    "id" | "fullName" | "companyName" | "email" | "phone" | "website" | "status" | "createdAt"
+  >,
+  detail?: string,
+) {
+  const lines = [
+    "🆕 Viral Bridge application",
+    "",
+    `Name: ${application.fullName ?? "—"}`,
+    `Company: ${application.companyName}`,
+    `Email: ${application.email}`,
+    `Phone: ${application.phone ?? "—"}`,
+    `Website: ${application.website ?? "—"}`,
+    `Status: ${application.status}`,
+    `Created: ${application.createdAt.toISOString()}`,
+    `ID: ${application.id}`,
+  ];
+
+  if (detail) lines.push("", detail);
+  return lines.join("\n");
+}
+
+export async function sendAdminApplicationNotification(
+  application: Application,
+  detail?: string,
+) {
+  const { chatId } = getTelegramAdminConfig();
+  const message = await callTelegramApi<TelegramMessage>("sendMessage", {
+    chat_id: chatId,
+    text: formatApplicationMessage(application, detail).slice(0, 4_000),
+    disable_web_page_preview: true,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "✅ Approve",
+            callback_data: `application:approve:${application.id}`,
+          },
+          {
+            text: "❌ Reject",
+            callback_data: `application:reject:${application.id}`,
+          },
+        ],
+      ],
+    },
+  });
+
+  if (!message) throw new Error("Telegram returned an empty sendMessage result");
+  return { chatId, messageId: message.message_id };
+}
+
+export async function sendAutoApprovedApplicationNotification(
+  application: Application,
+  assessment: {
+    totalScore: number;
+    confidence: number;
+    summary: string;
+  },
+  emailSent: boolean,
+) {
+  const { chatId } = getTelegramAdminConfig();
+  const detail = [
+    "🤖 Automatically approved by fit policy.",
+    `Fit score: ${assessment.totalScore}/100`,
+    `Confidence: ${Math.round(assessment.confidence * 100)}%`,
+    `Activation email: ${emailSent ? "sent" : "failed"}`,
+    `Summary: ${assessment.summary}`,
+  ].join("\n");
+  const message = await callTelegramApi<TelegramMessage>("sendMessage", {
+    chat_id: chatId,
+    text: formatApplicationMessage(application, detail).slice(0, 4_000),
+    disable_web_page_preview: true,
+  });
+
+  if (!message) throw new Error("Telegram returned an empty sendMessage result");
+  return { chatId, messageId: message.message_id };
+}
+
+export async function sendAutoRejectedApplicationNotification(
+  application: Application,
+  assessment: {
+    totalScore: number;
+    confidence: number;
+    summary: string;
+  },
+  emailSent: boolean,
+) {
+  const { chatId } = getTelegramAdminConfig();
+  const detail = [
+    "🤖 Automatically rejected by fit policy.",
+    `Fit score: ${assessment.totalScore}/100`,
+    `Confidence: ${Math.round(assessment.confidence * 100)}%`,
+    `Decision email: ${emailSent ? "sent" : "failed"}`,
+    `Summary: ${assessment.summary}`,
+  ].join("\n");
+  const message = await callTelegramApi<TelegramMessage>("sendMessage", {
+    chat_id: chatId,
+    text: formatApplicationMessage(application, detail).slice(0, 4_000),
+    disable_web_page_preview: true,
+    ...(emailSent
+      ? {}
+      : {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔁 Resend decision email",
+                  callback_data: `application:resend-rejection:${application.id}`,
+                },
+              ],
+            ],
+          },
+        }),
+  });
+
+  if (!message) throw new Error("Telegram returned an empty sendMessage result");
+  return { chatId, messageId: message.message_id };
 }
 
 async function sendConnectionConfirmed(connection: TelegramConnection) {
@@ -452,6 +606,17 @@ async function handleStartMessage(message: TelegramMessage) {
 }
 
 async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
+  const applicationMatch = callbackQuery.data?.match(
+    /^application:(approve|reject|resend|resend-rejection):([0-9a-f-]{36})$/,
+  );
+  if (applicationMatch) {
+    return handleApplicationCallback(
+      callbackQuery,
+      applicationMatch[1] as "approve" | "reject" | "resend" | "resend-rejection",
+      applicationMatch[2],
+    );
+  }
+
   const match = callbackQuery.data?.match(/^confirm:([a-f0-9]{32})$/);
   const connectionId = match?.[1];
   const chatId = callbackQuery.message?.chat.id;
@@ -494,6 +659,146 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   };
 }
 
+async function handleApplicationCallback(
+  callbackQuery: TelegramCallbackQuery,
+  action: "approve" | "reject" | "resend" | "resend-rejection",
+  applicationId: string,
+) {
+  const { chatId: adminChatId, userIds } = getTelegramAdminConfig();
+  const message = callbackQuery.message;
+
+  if (
+    !message ||
+    message.chat.id !== adminChatId ||
+    !userIds.has(callbackQuery.from.id)
+  ) {
+    await callTelegramApi("answerCallbackQuery", {
+      callback_query_id: callbackQuery.id,
+      text: "You are not allowed to review applications.",
+      show_alert: true,
+    });
+    return { handled: true, result: "application_admin_forbidden", applicationId };
+  }
+
+  try {
+    if (action === "resend-rejection") {
+      const result = await resendRejectionEmail(applicationId);
+      const detail = result.emailSent
+        ? "❌ Application rejected. Decision email sent."
+        : `⚠️ Application rejected, but email failed: ${result.emailError}`;
+      await callTelegramApi("editMessageText", {
+        chat_id: message.chat.id,
+        message_id: message.message_id,
+        text: formatApplicationMessage(result.application, detail).slice(0, 4_000),
+        reply_markup: result.emailSent
+          ? { inline_keyboard: [] }
+          : {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🔁 Resend decision email",
+                    callback_data: `application:resend-rejection:${applicationId}`,
+                  },
+                ],
+              ],
+            },
+      });
+      await callTelegramApi("answerCallbackQuery", {
+        callback_query_id: callbackQuery.id,
+        text: result.emailSent ? "Decision email sent" : "SMTP failed",
+        show_alert: !result.emailSent,
+      });
+      return {
+        handled: true,
+        result: result.emailSent
+          ? "application_rejection_email_resent"
+          : "application_rejection_email_failed",
+        applicationId,
+      };
+    }
+
+    if (action === "reject") {
+      const result = await rejectApplication(applicationId, callbackQuery.from.id);
+      const detail = result.emailSent
+        ? "❌ Application rejected. Decision email sent."
+        : `⚠️ Application rejected, but email failed: ${result.emailError}`;
+      await callTelegramApi("editMessageText", {
+        chat_id: message.chat.id,
+        message_id: message.message_id,
+        text: formatApplicationMessage(result.application, detail).slice(0, 4_000),
+        reply_markup: result.emailSent
+          ? { inline_keyboard: [] }
+          : {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🔁 Resend decision email",
+                    callback_data: `application:resend-rejection:${applicationId}`,
+                  },
+                ],
+              ],
+            },
+      });
+      await callTelegramApi("answerCallbackQuery", {
+        callback_query_id: callbackQuery.id,
+        text: result.emailSent ? "Decision email sent" : "SMTP failed",
+        show_alert: !result.emailSent,
+      });
+      return {
+        handled: true,
+        result: result.emailSent ? "application_rejected" : "application_rejection_email_failed",
+        applicationId,
+      };
+    }
+
+    const result =
+      action === "approve"
+        ? await approveApplication(applicationId, callbackQuery.from.id)
+        : await resendActivationEmail(applicationId, callbackQuery.from.id);
+    const detail = result.emailSent
+      ? "✅ Approved. Activation email sent."
+      : `⚠️ Approved, but email failed: ${result.emailError}`;
+
+    await callTelegramApi("editMessageText", {
+      chat_id: message.chat.id,
+      message_id: message.message_id,
+      text: formatApplicationMessage(result.application, detail),
+      reply_markup: result.emailSent
+        ? { inline_keyboard: [] }
+        : {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔁 Resend activation email",
+                  callback_data: `application:resend:${applicationId}`,
+                },
+              ],
+            ],
+          },
+    });
+    await callTelegramApi("answerCallbackQuery", {
+      callback_query_id: callbackQuery.id,
+      text: result.emailSent ? "Activation email sent" : "SMTP failed",
+      show_alert: !result.emailSent,
+    });
+
+    return {
+      handled: true,
+      result: result.emailSent ? "application_approved" : "application_email_failed",
+      applicationId,
+    };
+  } catch (error) {
+    const messageText =
+      error instanceof WorkflowError ? error.message : "Application review failed";
+    await callTelegramApi("answerCallbackQuery", {
+      callback_query_id: callbackQuery.id,
+      text: messageText.slice(0, 180),
+      show_alert: true,
+    });
+    return { handled: true, result: "application_review_failed", applicationId };
+  }
+}
+
 export async function processTelegramUpdate(update: TelegramUpdate) {
   if (!Number.isInteger(update.update_id)) {
     throw new Error("Telegram update_id must be an integer");
@@ -508,6 +813,7 @@ export async function processTelegramUpdate(update: TelegramUpdate) {
     handled: boolean;
     result: string;
     connectionId?: string;
+    applicationId?: string;
   };
 
   if (update.callback_query) {

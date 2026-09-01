@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVATED
+}
+
+enum ApplicationReviewSource {
+  ADMIN_TELEGRAM
+  AUTOMATION
+}
+
+enum FitAssessmentStatus {
+  QUEUED
+  RUNNING
+  NEEDS_INFO
+  MANUAL_REVIEW
+  AUTO_APPROVED
+  AUTO_REJECTED
+  FAILED
+}
+
+enum FitRecommendation {
+  AUTO_APPROVE
+  AUTO_REJECT
+  NEEDS_INFO
+  MANUAL_REVIEW
+}
+
+enum AssessmentRunStatus {
+  COMPLETED
+  FAILED
+}
+
+enum OnboardingSessionStatus {
+  ACTIVE
+  APPROVED
+  CLOSED
+}
+
+enum OnboardingMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum InviteDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum ClientStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Application {
+  id                         String                   @id @default(uuid()) @db.Uuid
+  fullName                   String?                  @db.VarChar(160)
+  companyName                String                   @db.VarChar(160)
+  email                      String                   @db.VarChar(320)
+  phone                      String?                  @db.VarChar(32)
+  website                    String?                  @db.VarChar(2048)
+  status                     ApplicationStatus        @default(PENDING)
+  telegramChatId             BigInt?
+  telegramMessageId          BigInt?
+  telegramNotifiedAt         DateTime?
+  telegramDeliveryError      String?                  @db.VarChar(1000)
+  reviewedByTelegramId       BigInt?
+  reviewSource               ApplicationReviewSource?
+  reviewedAt                 DateTime?
+  rejectionReason            String?                  @db.VarChar(500)
+  decisionEmailSentAt        DateTime?
+  decisionEmailDeliveryError String?                  @db.VarChar(1000)
+  fitStatus                  FitAssessmentStatus      @default(QUEUED)
+  fitScore                   Int?
+  fitConfidence              Float?
+  assessmentJobId            String?                  @db.VarChar(255)
+  assessmentError            String?                  @db.VarChar(1000)
+  lastAssessedAt             DateTime?
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  activationInvites          ActivationInvite[]
+  assessments                ApplicationAssessment[]
+  onboardingSession          OnboardingSession?
+  client                     Client?
+
+  @@index([email])
+  @@index([status, createdAt])
+  @@index([fitStatus, createdAt])
+}
+
+model ApplicationAssessment {
+  id               String              @id @default(uuid()) @db.Uuid
+  applicationId    String              @db.Uuid
+  providerJobId    String              @unique @db.VarChar(255)
+  runStatus        AssessmentRunStatus
+  recommendation   FitRecommendation?
+  totalScore       Int?
+  confidence       Float?
+  summary          String?             @db.Text
+  companyProfile   Json?
+  factors          Json?
+  evidence         Json?
+  hardBlockers     Json?
+  questions        Json?
+  rawResult        Json?
+  model            String?             @db.VarChar(120)
+  durationMs       Int?
+  estimatedCostUsd Float?
+  error            String?             @db.VarChar(1000)
+  createdAt        DateTime            @default(now())
+  application      Application         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+}
+
+model OnboardingSession {
+  id            String                  @id @default(uuid()) @db.Uuid
+  applicationId String                  @unique @db.Uuid
+  tokenHash     String                  @unique @db.Char(64)
+  status        OnboardingSessionStatus @default(ACTIVE)
+  expiresAt     DateTime
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  application   Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  messages      OnboardingMessage[]
+
+  @@index([expiresAt])
+}
+
+model OnboardingMessage {
+  id        String                @id @default(uuid()) @db.Uuid
+  sessionId String                @db.Uuid
+  role      OnboardingMessageRole
+  content   String                @db.Text
+  createdAt DateTime              @default(now())
+  session   OnboardingSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model ActivationInvite {
+  id             String               @id @default(uuid()) @db.Uuid
+  applicationId  String               @db.Uuid
+  tokenHash      String               @unique @db.Char(64)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  revokedAt      DateTime?
+  emailSentAt    DateTime?
+  deliveryStatus InviteDeliveryStatus @default(PENDING)
+  deliveryError  String?              @db.VarChar(1000)
+  createdAt      DateTime             @default(now())
+  application    Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@index([expiresAt])
+}
+
+model User {
+  id           String             @id @default(uuid()) @db.Uuid
+  email        String             @unique @db.VarChar(320)
+  name         String             @db.VarChar(160)
+  passwordHash String             @db.VarChar(512)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  memberships  ClientMembership[]
+  sessions     Session[]
+}
+
+model Client {
+  id            String             @id @default(uuid()) @db.Uuid
+  applicationId String             @unique @db.Uuid
+  name          String             @db.VarChar(160)
+  niche         String?            @db.VarChar(240)
+  status        ClientStatus       @default(ACTIVE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  profile       ClientProfile?
+  memberships   ClientMembership[]
+}
+
+model ClientProfile {
+  clientId            String @id @db.Uuid
+  onboardingAnswers   Json?
+  nicheAnalysisReport Json?
+  client              Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model ClientMembership {
+  id        String         @id @default(uuid()) @db.Uuid
+  clientId  String         @db.Uuid
+  userId    String         @db.Uuid
+  role      MembershipRole @default(MEMBER)
+  createdAt DateTime       @default(now())
+  client    Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique @db.Char(64)
+  expiresAt DateTime
+  ipAddress String?  @db.VarChar(64)
+  userAgent String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}

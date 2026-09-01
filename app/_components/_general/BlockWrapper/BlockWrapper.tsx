@@ -1,20 +1,26 @@
 import { ReactNode } from "react";
-import Container from "../Container/Container";
+import Container, { ContainerSize } from "../Container/Container";
 import styles from './BlockWrapper.module.scss';
 interface BlockWrapperProps {
     children: ReactNode;
     container?:boolean;
-    spacing?: 'top' | 'bottom' | 'hero';
+    spacing?: 'top' | 'bottom' | 'hero' | 'small';
+    customClass?: string;
+    id?: string;
+    size?: ContainerSize;
 }
 
 export default function BlockWrapper({
     children,
     container = true,
-    spacing = 'top'
+    spacing = 'top',
+    customClass = '',
+    id,
+    size = 'default'
 }:BlockWrapperProps) {
     return (
-        <section className={`${styles.block} ${styles[`block--${spacing}`]}`}>
-            {container ? (<Container>{children}</Container>) : (children)}
+        <section id={id} className={`${styles.block} ${styles[`block--${spacing}`]} ${customClass}`}>
+            {container ? (<Container size={size}>{children}</Container>) : (children)}
         </section>
     )
 }

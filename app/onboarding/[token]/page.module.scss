@@ -1,0 +1,296 @@
+.page {
+    min-height: 100svh;
+    padding: 156px 24px 80px;
+    background:
+        radial-gradient(circle at 72% 12%, rgba(22, 95, 252, 0.16), transparent 34%),
+        var(--color-background);
+}
+
+.shell {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(520px, 1.22fr);
+    gap: 64px;
+    align-items: start;
+}
+
+.intro {
+    position: sticky;
+    top: 140px;
+
+    > span {
+        display: inline-block;
+        color: var(--color-accent);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    h1 {
+        max-width: 580px;
+        margin-top: 24px;
+        font-size: clamp(48px, 5.6vw, 82px);
+        line-height: 0.94;
+        letter-spacing: -0.06em;
+    }
+
+    p {
+        max-width: 520px;
+        margin-top: 28px;
+        color: rgba(13, 16, 23, 0.62);
+        font-size: 18px;
+        line-height: 1.55;
+    }
+}
+
+.chat {
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(13, 16, 23, 0.09);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 32px 90px rgba(13, 16, 23, 0.1);
+    backdrop-filter: blur(20px);
+}
+
+.chatHeader {
+    padding: 22px 24px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+    border-bottom: 1px solid rgba(13, 16, 23, 0.08);
+
+    > div {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+
+            strong { font-size: 15px; }
+            span { color: rgba(13, 16, 23, 0.52); font-size: 13px; }
+        }
+    }
+}
+
+.agentIcon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--color-accent);
+    color: #fff;
+
+    svg { width: 19px; height: 19px; }
+}
+
+.status {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: rgba(22, 95, 252, 0.08);
+    color: var(--color-accent);
+    font-size: 12px;
+    font-weight: 600;
+
+    svg {
+        width: 14px;
+        height: 14px;
+        animation: spin 1.4s linear infinite;
+    }
+}
+
+.statusApproved {
+    background: rgba(25, 146, 86, 0.1);
+    color: #147346;
+
+    svg { animation: none; }
+}
+
+.statusSettled svg {
+    animation: none;
+}
+
+.messages {
+    flex: 1;
+    padding: 30px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.message {
+    width: min(88%, 520px);
+    align-self: flex-start;
+
+    > span {
+        display: block;
+        margin: 0 0 7px 4px;
+        color: rgba(13, 16, 23, 0.46);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    p {
+        padding: 15px 17px;
+        border-radius: 6px 18px 18px 18px;
+        background: #f1f1ed;
+        color: #17181a;
+        font-size: 15px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+}
+
+.messageUser {
+    align-self: flex-end;
+
+    > span { text-align: right; margin-right: 4px; }
+
+    p {
+        border-radius: 18px 6px 18px 18px;
+        background: var(--color-accent);
+        color: #fff;
+    }
+}
+
+.score {
+    margin: 0 24px 18px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 16px;
+    align-items: center;
+    border-radius: 16px;
+    background: rgba(22, 95, 252, 0.06);
+
+    span { color: rgba(13, 16, 23, 0.58); font-size: 13px; }
+    strong { grid-row: span 2; font-size: 22px; color: var(--color-accent); }
+    small { color: rgba(13, 16, 23, 0.42); font-size: 11px; }
+}
+
+.composer {
+    padding: 18px 24px 24px;
+    border-top: 1px solid rgba(13, 16, 23, 0.08);
+
+    label {
+        display: block;
+        margin-bottom: 9px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    > div {
+        padding: 8px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        border: 1px solid rgba(13, 16, 23, 0.13);
+        border-radius: 17px;
+        background: #fff;
+
+        &:focus-within {
+            border-color: rgba(22, 95, 252, 0.65);
+            box-shadow: 0 0 0 3px rgba(22, 95, 252, 0.07);
+        }
+    }
+
+    textarea {
+        min-height: 72px;
+        flex: 1;
+        resize: vertical;
+        padding: 9px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font: inherit;
+        line-height: 1.45;
+    }
+
+    button {
+        min-height: 44px;
+        padding: 0 16px;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border: 0;
+        border-radius: 12px;
+        background: var(--color-accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:disabled { opacity: 0.45; cursor: default; }
+        svg { width: 16px; height: 16px; }
+    }
+}
+
+.chatFooter {
+    padding: 18px 24px 22px;
+    border-top: 1px solid rgba(13, 16, 23, 0.08);
+    color: rgba(13, 16, 23, 0.5);
+    font-size: 13px;
+    text-align: center;
+}
+
+.loading {
+    min-height: 640px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    color: rgba(13, 16, 23, 0.58);
+
+    svg {
+        width: 30px;
+        height: 30px;
+        color: var(--color-accent);
+        animation: spin 1.2s linear infinite;
+    }
+}
+
+.error {
+    padding: 0 24px 18px;
+    color: #b54242;
+    font-size: 13px;
+    text-align: center;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 960px) {
+    .page { padding-top: 132px; }
+    .shell { grid-template-columns: 1fr; gap: 40px; }
+    .intro { position: static; }
+    .intro h1 { max-width: 720px; }
+}
+
+@media (max-width: 600px) {
+    .page { padding: 112px 14px 40px; }
+    .intro h1 { font-size: 46px; }
+    .intro p { font-size: 16px; }
+    .chat { min-height: 590px; border-radius: 22px; }
+    .chatHeader { align-items: flex-start; flex-direction: column; }
+    .messages { padding: 24px 16px; }
+    .message { width: 94%; }
+    .score { margin-inline: 16px; }
+    .composer { padding-inline: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status svg,
+    .loading svg { animation: none; }
+}

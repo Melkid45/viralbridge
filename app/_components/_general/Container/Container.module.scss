@@ -1,4 +1,17 @@
 .container {
     width: 100%;
-    padding: 0 32px;
+    padding: 0 80px;
+
+    &--narrow {
+        max-width: 1590px;
+        margin: 0 auto;
+    }
+
+    @media (max-width: 1200px) {
+        padding: 0 40px;
+    }
+
+    @media (max-width: 767px) {
+        padding: 0 20px;
+    }
 }

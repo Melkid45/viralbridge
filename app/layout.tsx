@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./global.scss";
-import { Inter, Roboto, Roboto_Mono } from 'next/font/google'
+import { Rethink_Sans } from 'next/font/google'
 import Header from "./_components/_general/Header/Header";
-import localFont from 'next/font/local'
 export const metadata: Metadata = {
   title: "Viral Bridge — AI Growth Operating System",
   description:
@@ -10,22 +9,10 @@ export const metadata: Metadata = {
 };
 
 
-const bdogFont = localFont({
-  variable: '--secondary-font',
-  src: './fonts/BDOGrotesk-VF.ttf',
-  weight: '300 900',
-  style: 'normal',
-  display: 'swap',
-})
-
-const interFont = Inter({
+const rethinkSans = Rethink_Sans({
+  weight: 'variable',
   subsets: ['latin'],
-  variable: '--font-inter',
   display: 'swap',
-})
-
-const robotoFont = Roboto_Mono({
-  variable: '--font-number',
 })
 
 export default function RootLayout({
@@ -34,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${interFont.variable} ${bdogFont.variable} ${robotoFont.variable}`}>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body className={rethinkSans.className}>
         <Header/>
         {children}
       </body>

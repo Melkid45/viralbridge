@@ -1,0 +1,4 @@
+ALTER TABLE "Application"
+ADD COLUMN "fullName" VARCHAR(160),
+ADD COLUMN "phone" VARCHAR(32),
+ADD COLUMN "website" VARCHAR(2048);

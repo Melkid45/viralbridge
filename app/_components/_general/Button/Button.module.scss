@@ -1,5 +1,5 @@
 .button{
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     display: inline-flex;
     align-items: center;
@@ -11,6 +11,11 @@
     line-height: 1;
     white-space: nowrap;
     isolation: isolate;
+    &:disabled {
+        cursor: wait;
+        opacity: .65;
+        pointer-events: none;
+    }
     svg{
         height: 14px;
         width: auto;
@@ -19,8 +24,22 @@
         background: var(--color-accent);
         color: var(--color-white);
     }
+    &--white{
+        background: var(--color-white);
+        color: var(--color-black);
+        border: none;
+        .button__circle{
+            background: var(--color-black);
+        }
+    }
     &--rounded-full{
         border-radius: 500px;
+    }
+    &--size-large {
+        padding: 24px 48px;
+        font-size: 24px;
+        letter-spacing: -0.3px;
+        line-height: 1;
     }
 
     &__label{

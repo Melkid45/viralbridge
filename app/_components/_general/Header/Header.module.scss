@@ -5,7 +5,7 @@
     left: 0;
     z-index: 99;
     background: var(--color-background);
-    padding: 16px 0px;
+    padding: 24px 0px;
     &__body{
         display: flex;
         align-items: center;
@@ -26,20 +26,20 @@
     }
 
     &__logo {
-        font-family: var(--font-inter), Arial, sans-serif;
-        font-size: 24px;
-        font-weight: 600;
-        line-height: 1;
-        letter-spacing: -1.2px;
+        width: auto;
+        height: 42px;
+        img{
+            height: 42px;
+            width: auto;
+        }
     }
 
     &__link {
         color: var(--color-black);
-        font-family: var(--secondary-font), Arial, sans-serif;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 500;
         line-height: 1.2;
-        letter-spacing: -0.32px;
+        letter-spacing: -0.2px;
         position: relative;
         transition: all 0.3s ease;
         &:hover{
@@ -94,6 +94,28 @@
     @media (prefers-reduced-motion: reduce) {
         &__linkText span {
             transition: none;
+        }
+    }
+
+    @media (max-width: 1100px) {
+        &__menu { display: none; }
+    }
+
+    @media (max-width: 767px) {
+        padding: 20px 0;
+
+        &__logo,
+        &__logo img {
+            height: 34px;
+        }
+
+        &__body .header__action {
+            gap: 12px;
+
+            > a {
+                padding: 11px 14px;
+                font-size: 14px;
+            }
         }
     }
 }

@@ -1,0 +1,109 @@
+.footer {
+    padding: 150px 0 36px;
+
+    &__top,
+    &__bottom {
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 32px;
+    }
+
+    &__top {
+        padding-bottom: 42px;
+
+        nav ul {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        nav a {
+            font-size: 16px;
+            font-weight: 500;
+            display: inline-flex;
+            transition: color 250ms ease;
+
+            &:hover { color: var(--color-accent); }
+        }
+    }
+
+    &__linkText {
+        display: grid;
+        overflow: hidden;
+        overflow: clip;
+
+        span {
+            grid-area: 1 / 1;
+            transition:
+                transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+                filter 360ms cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 320ms ease;
+            will-change: transform, filter, opacity;
+
+            &:first-child {
+                transform: translateY(0);
+                filter: blur(0);
+                opacity: 1;
+            }
+
+            &:last-child {
+                transform: translateY(110%);
+                filter: blur(5px);
+                opacity: 0;
+            }
+        }
+    }
+
+    nav a:is(:hover, :focus-visible) &__linkText {
+        span:first-child {
+            transform: translateY(-110%);
+            filter: blur(5px);
+            opacity: 0;
+        }
+
+        span:last-child {
+            transform: translateY(0);
+            filter: blur(0);
+            opacity: 1;
+        }
+    }
+
+    &__logo {
+        height: 38px;
+        img { width: auto; height: 100%; }
+    }
+
+    &__bottom {
+        padding-top: 26px;
+        border-top: 1px solid #dddcd7;
+        color: rgba(23, 24, 26, 0.48);
+        font-size: 14px;
+
+        > div {
+            display: flex;
+            gap: 24px;
+        }
+    }
+
+    @media (max-width: 900px) {
+        &__top { align-items: flex-start; flex-wrap: wrap; }
+        &__top nav { width: 100%; order: 3; }
+        &__top nav ul { flex-wrap: wrap; }
+    }
+
+    @media (max-width: 600px) {
+        padding-top: 80px;
+        &__top { flex-direction: column; }
+        &__top nav ul { flex-direction: column; align-items: flex-start; gap: 18px; }
+        &__bottom { flex-direction: column; align-items: flex-start; }
+        &__bottom > div { flex-wrap: wrap; gap: 16px 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__linkText span {
+            transition: none;
+        }
+    }
+}

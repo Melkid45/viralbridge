@@ -8,6 +8,7 @@ OpenAI brief: Browser → Next.js → Modal Function → OpenAI Responses API
 OpenAI agents: Browser → Next.js → Modal → Orchestrator → SEO Agent → Firecrawl → QA
 Provider A/B: Browser → Next.js → Modal → direct API + OpenRouter BYOK
 Agent smoke:  Browser → Next.js → Modal Function → Claude Agent SDK → Firecrawl
+Fit onboarding: Form → Next.js → Modal job → Claude Agent SDK + Firecrawl → policy → chat/invite
 ```
 
 Также добавлен Telegram channel spike:
@@ -127,6 +128,118 @@ Claude Agent endpoint и отдельный Claude provider benchmark также
 - OpenAI API key нужен только для AI-приоритизации.
 
 Ключи нельзя добавлять в Git или отправлять в чат.
+
+### Business-fit onboarding
+
+Новый onboarding не даёт Claude права апрувить клиента. Modal worker собирает
+публичные данные через Firecrawl и возвращает структурированный assessment по
+четырём факторам: масштабируемость, региональность, рыночная возможность и
+экономика бизнеса. Решение принимает TypeScript policy engine:
+
+- `AUTO_REJECT`: score ниже 50 при confidence от 80%, минимум двух доменах и
+  отсутствии признаков недостаточных данных;
+- `MANUAL_REVIEW`: score 50–55, технические ошибки и неразрешённые после
+  уточнения случаи уходят администратору в Telegram;
+- `AUTO_APPROVE`: score от 56, confidence от 80%, минимум два домена-источника,
+  нет blockers, scalability и regionality не ниже 12/25;
+- `NEEDS_INFO`: если агент не уверен, что нашёл правильную компанию, либо ему
+  не хватает данных о соцсетях, франшизе, географии или модели масштабирования,
+  он задаёт до трёх точных вопросов в секретном onboarding-чате;
+- clarification ограничен двумя ответами клиента и двумя повторными анализами,
+  после чего оставшиеся сомнения передаются администратору;
+- website в заявке необязателен: worker сначала ищет компанию по названию, а при
+  неоднозначности просит официальный сайт или социальные профили в чате;
+- каждый анализ ограничен аварийным Claude-потолком `$0.12`; это не целевая
+  стоимость запроса — фактическая цена зависит от использованных токенов. Firecrawl-контекст сокращён
+  до трёх результатов и 2500 символов страницы, а длина structured output
+  ограничена JSON Schema, чтобы повторные проверки не
+  расходовали токены на нерелевантный текст;
+- Claude Agent SDK остаётся оркестратором: он получает заявку, вызывает ровно
+  один in-process MCP tool `research_company`, получает компактный Firecrawl
+  dossier и сам выполняет оценку по фиксированной rubric. Повторный вызов tool
+  возвращает cached guard и не расходует Firecrawl credits;
+- при clarification в новый assessment передаётся пара `вопросы → ответ`, а не
+  только короткий ответ клиента. Поэтому значения вроде `1. no / 2. no` не
+  теряют смысл и агент не задаёт уже закрытые вопросы повторно;
+- клиент не видит внутренние баллы и получает финальное решение по email.
+
+Clarification smoke-test выполнен 22 августа 2026: для намеренно несовпадающих
+`Viral Bridge Example` и `example.com` Claude вернул `company_match=MISMATCH`,
+score `0/100` и не стал придумывать бизнес. Worker отработал за `17.17 сек.` при
+стоимости Claude `$0.01396`; policy engine направляет такой результат в
+`NEEDS_INFO`, а не в автоматический отказ.
+
+Задеплоить асинхронный Modal worker:
+
+```bash
+.venv/bin/python -m modal deploy modal/business_fit.py --env dev
+```
+
+URL функции `business_fit_api` записать в `.env.local` и Vercel:
+
+```dotenv
+MODAL_BUSINESS_FIT_URL=https://...modal.run
+```
+
+Для защищённого operational retry/sync по `applicationId` или `email + companyName` в production нужно
+задать `ASSESSMENT_RECOVERY_SECRET` длиной не менее 32 символов. Endpoint
+`POST /api/admin/assessments/recover` принимает secret только в заголовке
+`x-recovery-secret`, синхронизирует или повторно запускает Modal job и ротирует
+onboarding link. Параметр `restart: true` разрешает повторный анализ состояния
+`NEEDS_INFO` после исправления qualification flow.
+
+Worker использует уже созданные Modal secrets `viralbridge-firecrawl-dev` и
+`viralbridge-claude-dev`. Prisma migration
+`20260821120000_add_fit_assessment_onboarding` нужно применить до включения flow.
+
+Первый успешный business-fit benchmark выполнен 21 августа 2026 на `stripe.com`:
+
+| Вариант | Полный запрос | Modal worker | Firecrawl | Turns | Claude cost |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2 MCP tools + ToolSearch | 45 сек | 35.37 сек | 2.35 сек | 4 | $0.04611 |
+| 2 MCP tools + `tools=[]` | 45 сек | 42.05 сек | 0.88 сек | 4 | $0.03567 |
+| 1 MCP tool + Structured Output | 39 сек | 29.99 сек | 0.68 сек | 3 | $0.02595 |
+
+Финальный вариант использует один research tool, официальный JSON Schema output
+и TypeScript policy. Stripe получил 65/100 и не проходит auto-approve: глобальный
+масштаб высокий, но дополнительная SEO/growth-ценность для такого лидера низкая.
+
+Контрольный onboarding выполнен 22 августа 2026 на `anselat.lv` через полный
+`Next.js → Modal → Firecrawl → Claude Agent SDK → Postgres → Telegram` flow:
+
+| Метрика | Результат |
+| --- | ---: |
+| Ответ формы | 6.73 сек |
+| Форма → итоговый статус | 50.87 сек |
+| Modal worker | 38.03 сек |
+| Firecrawl research | 3.10 сек, 3 credits |
+| Claude Agent SDK | 3 turns, $0.02844 |
+| Решение на момент benchmark | `MANUAL_REVIEW`, 34/100, confidence 95% |
+| Источники | 4 evidence URL, 3 домена |
+| Telegram | доставлено без ошибки |
+| Activation invite | не создавался, как и требуется для manual review |
+
+Первый прогон обнаружил нестабильность Agent SDK с вложенным
+`StructuredOutput`: модель исчерпала пять попыток JSON validation. Контракт worker
+переведён на плоскую строгую схему с нормализацией обратно в доменную структуру;
+два последующих прогона завершились успешно с одинаковым решением (33 и 34 балла).
+Текущий safety cap одного Claude-прогона — `$0.12`; он предотвращает
+неконтролируемый расход, но не должен использоваться как целевая цена.
+По текущей policy этот же результат `34/100` при confidence 95% и трёх доменах
+привёл бы к `AUTO_REJECT` с отправкой клиенту нейтрального decision email.
+
+Production recovery-test выполнен 24 августа 2026 на той же заявке Anselat
+после ответа `no / no / 1000 euro`:
+
+| Метрика | Результат |
+| --- | ---: |
+| Архитектура | Claude Agent SDK → `research_company` MCP tool → Firecrawl → structured assessment |
+| Search tool | 1 вызов, 862 мс, сайт + 3 search results |
+| Claude Agent SDK | 4 turns, 73.36 сек, `$0.04259` |
+| Решение | `AUTO_REJECT`, 26/100, confidence 90% |
+| Blocker | `LOCAL_SINGLE_LOCATION` |
+| Повторные вопросы | 0 |
+| Email / Telegram | доставлены без ошибок |
 
 ## 2. Next.js
 

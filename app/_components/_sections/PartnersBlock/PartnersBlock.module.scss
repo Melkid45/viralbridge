@@ -1,105 +1,50 @@
 .partners{
     display: flex;
     flex-direction: column;
-    gap: 64px;
-    &__strokes{
-        width: 100vw;
-        margin-left: calc(50% - 50vw);
-        padding: 8px 0;
-        overflow: hidden;
-        overflow: clip;
-        position: relative;
-        -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
-        mask-image: linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
-
-        &::before,
-        &::after {
-            content: '';
-            position: absolute;
-            z-index: 2;
-            top: 0;
-            bottom: 0;
-            width: clamp(64px, 10vw, 160px);
-            pointer-events: none;
-        }
-
-        &::before {
-            left: 0;
-            background: linear-gradient(90deg, var(--color-background), transparent);
-        }
-
-        &::after {
-            right: 0;
-            background: linear-gradient(270deg, var(--color-background), transparent);
-        }
-
-        .partners__wrapper{
+    align-items: center;
+    gap: 48px;
+    &__body{
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        .partners__item{
             display: flex;
-            width: max-content;
-            animation: partnersMarquee 34s linear infinite;
-            backface-visibility: hidden;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
-
-            .partners__stroke{
-                display: flex;
-                flex-shrink: 0;
-                gap: 32px;
-                padding-right: 32px;
-
-                .partners__item{
-                    flex: none;
-                    width: 256px;
-                    aspect-ratio: 1/1;
-                    border-radius: 16px;
-                    background: var(--color-white);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                    &:hover{
-                        img{
-                            opacity: 0;
-                            transform: translateY(-10%);
-                        }
-                        .partners__text{
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
-                    }
-                    img{
-                        max-height: 36px;
-                        height: 100%;
-                        transition: all 0.3s ease;
-                    }
-                    .partners__text{
-                        position: absolute;
-                        opacity: 0;
-                        transform: translateY(10%);
-                        display: flex;
-                        flex-direction: column;
-                        gap: 16px;
-                        transition: all 0.3s ease;
-                        width: 100%;
-                        align-items: center;
-                        p{
-                            text-align: center;
-                        }
-                    }
-                }
+            align-items: center;
+            justify-content: center;
+            padding: 24px 48px;
+            &:not(:last-child) {
+                border-right: 1px solid #E5E7E8;
+            }
+            img{
+                max-height: 57px;
+                height: 100%;
+                width: 100%;
+                object-fit: contain;
+                max-width: 242px;
             }
         }
     }
 
-    @media (prefers-reduced-motion: reduce) {
-        &__strokes .partners__wrapper {
-            animation-play-state: paused;
+    @media (max-width: 900px) {
+        &__body {
+            grid-template-columns: repeat(3, 1fr);
+
+            .partners__item {
+                padding: 20px 28px;
+
+                &:not(:last-child) { border-right: 0; }
+            }
         }
     }
-}
 
-@keyframes partnersMarquee {
-    to {
-        transform: translate3d(-50%, 0, 0);
+    @media (max-width: 560px) {
+        gap: 32px;
+        text-align: center;
+
+        &__body {
+            grid-template-columns: repeat(2, 1fr);
+            width: 100%;
+
+            .partners__item { padding: 16px; }
+        }
     }
 }

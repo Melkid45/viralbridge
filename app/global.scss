@@ -1,6 +1,6 @@
 @use './assets/_styles/base/reset';
 @use './assets/_styles/base/typography';
-
+@use './assets/_styles/tag';
 :root {
     --color-background: #f8f7f3;
     --color-accent: #165FFC;
@@ -14,5 +14,9 @@
 body {
     background: var(--color-background);
     width: 100%;
-    font-family: var(--font-inter), Arial, sans-serif;
+    overflow-x: clip;
+}
+
+html {
+    scroll-behavior: smooth;
 }

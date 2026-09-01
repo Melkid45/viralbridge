@@ -4,10 +4,11 @@ import styles from './Button.module.scss';
 interface ButtonProps {
     children: ReactNode;
     link?: string;
-    variant?: 'default' | 'accent';
+    variant?: 'default' | 'accent' | 'white';
     size?: 'default' | 'large';
     round?: 'default' | 'full';
     circle?: boolean;
+    disabled?: boolean;
 }
 
 export default function Button({
@@ -16,7 +17,8 @@ export default function Button({
     variant = 'default',
     size = 'default',
     round,
-    circle = true
+    circle = true,
+    disabled = false
 }:ButtonProps) {
     return (
         link ? (
@@ -30,7 +32,7 @@ export default function Button({
                 )}
             </Link>
         ) : (
-            <button className={`${styles.button} ${styles[`button--${variant}`]} ${styles[`button--size-${size}`]} ${styles[`button--rounded-${round}`]}`}>
+            <button disabled={disabled} className={`${styles.button} ${styles[`button--${variant}`]} ${styles[`button--size-${size}`]} ${styles[`button--rounded-${round}`]}`}>
                 <span className={styles.button__label}>
                     <span>{children}</span>
                     <span aria-hidden="true">{children}</span>

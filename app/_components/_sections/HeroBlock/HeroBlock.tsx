@@ -1,76 +1,50 @@
+import Image, { StaticImageData } from "next/image";
 import BlockWrapper from "../../_general/BlockWrapper/BlockWrapper";
 import styles from './HeroBlock.module.scss';
-
+import { ArrowRight } from "lucide-react";
+import { ReactNode } from "react";
+import Button from "../../_general/Button/Button";
+import TypingText from "./TypingText";
 interface HeroBlockProps {
-    items?: {
-        text: string;
-    }[];
-    softTitle: string;
-    description: string;
+    title: string | ReactNode;
+    button: string;
+    image: StaticImageData | string;
+    helloTexts: string[];
 }
 
 export default function HeroBlock({
-    items,
-    softTitle,
-    description
+    title,
+    button,
+    image,
+    helloTexts
 }:HeroBlockProps) {
     return (
-        <BlockWrapper spacing="hero" container={false}>
+        <BlockWrapper id="main" spacing="hero" customClass={styles.block__hero} container={false}>
             <div className={styles.hero}>
-                <h1 className={`${styles.hero__head} heading heading--giant`}>
-                    <span>Viral</span>
-                    <span>Scale</span>
-                </h1>
+                <Image
+                    src={image}
+                    alt="Abstract AI growth signal network"
+                    fill
+                    priority
+                    unoptimized
+                    sizes="calc(100vw - 64px)"
+                />
                 <div className={styles.hero__body}>
-                    <div className={styles.hero__media} aria-hidden="true">
-                        <video
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            preload="auto"
-                            poster="/media/viralbridge-hero-poster.jpg"
-                        >
-                            <source src="/media/viralbridge-hero.webm" type="video/webm" />
-                            <source src="/media/viralbridge-hero.mp4" type="video/mp4" />
-                        </video>
-                    </div>
-                    {items && (
-                        <div className={styles.hero__items}>
-                            {items.map((item) => (
-                                <div key={item.text} className={styles.hero__item}>
-                                    <span>{item.text}</span>
-                                    <span className={styles.hero__itemLine} aria-hidden="true" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className={styles.hero__marquee} aria-hidden="true">
-                        <div className={styles.hero__marqueeTrack}>
-                            <span>Scroll to reveal —</span>
-                            <span>Scroll to reveal —</span>
-                            <span>Scroll to reveal —</span>
-                        </div>
-                    </div>
-                    <div className={styles.hero__bottom}>
-                        <div className={styles.hero__information}>
-                            <h3 className={styles.hero__label}>
-                                {softTitle}
-                            </h3>
-                            <p className={styles.hero__description}>
-                                {description}
-                            </p>
-                        </div>
-                        <div className={styles.hero__status}>
-                            <div className={styles.hero__statusMark}>VB</div>
-                            <div className={styles.hero__statusCopy}>
-                                <strong>AI growth team</strong>
-                                <span>Always on. Always learning.</span>
-                            </div>
-                            <span className={styles.hero__statusDot} aria-hidden="true" />
-                        </div>
+                    <h1 className="heading heading--large">
+                        {title}
+                    </h1>
+                    <div className={styles['hero__body-hello']}>
+                        <p className="text text--small text--color-white text--opacity-60">
+                            <TypingText phrases={helloTexts} />
+                        </p>
+                        <a className={styles.hello__link} href="/#contact" aria-label="Go to the first scan form">
+                            <ArrowRight/>
+                        </a>
                     </div>
                 </div>
+                <Button link="/#contact" variant="accent" round="full" size="large">
+                    {button}
+                </Button>
             </div>
         </BlockWrapper>
     )

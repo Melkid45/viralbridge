@@ -12,3 +12,6 @@ __pycache__/
 !modal/.env.claude.example
 npm-debug.log*
 tmp/
+app/generated/prisma/
+.vercel
+.env*

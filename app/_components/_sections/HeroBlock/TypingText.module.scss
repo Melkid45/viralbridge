@@ -1,0 +1,17 @@
+.typing {
+    display: inline;
+
+    &__cursor {
+        display: inline-block;
+        width: 1px;
+        height: 1.05em;
+        margin-left: 3px;
+        background: currentColor;
+        vertical-align: -0.15em;
+        animation: cursor-blink 800ms steps(1, end) infinite;
+    }
+}
+
+@keyframes cursor-blink {
+    50% { opacity: 0; }
+}

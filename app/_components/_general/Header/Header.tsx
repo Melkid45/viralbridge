@@ -3,7 +3,8 @@ import Container from "../Container/Container";
 import styles from './Header.module.scss';
 import Button from "../Button/Button";
 import { ArrowRight, Monitor } from "lucide-react";
-
+import Image from "next/image";
+import Logo from '@/app/assets/images/logo.svg';
 
 interface HeaderLink {
     href: string;
@@ -19,27 +20,27 @@ interface HeaderProps {
 const navigationArray: HeaderLink[] = [
     {
         label: 'Main',
-        href: '#main'
+        href: '/#main'
     },
     {
         label: 'Product',
-        href: '#product'
+        href: '/#product'
     },
     {
         label: 'How it works',
-        href: '#how'
+        href: '/#how'
     },
     {
         label: 'Prices',
-        href: '#prices'
+        href: '/#prices'
     },
     {
         label: 'FAQ',
-        href: '#faq'
+        href: '/#faq'
     },
     {
         label: 'Contact',
-        href: '#contact'
+        href: '/#contact'
     },
 ]
 
@@ -52,7 +53,7 @@ export default function Header({
             <Container>
                 <div className={styles.header__body}>
                     <Link href={'/'} className={styles.header__logo}>
-                        ViralBridge
+                        <Image src={Logo} alt="ViralBridge Logo"/>
                     </Link>
                     <div className={styles.header__action}>
                         {navigation && (
